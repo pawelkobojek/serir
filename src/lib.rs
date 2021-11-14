@@ -21,15 +21,21 @@ fn handle_client(
     mut conn: TcpStream,
 ) -> Result<(), Box<dyn Error>> {
     let mut buffer = vec![0; 1024];
-    while conn.read(&mut buffer)? > 0 {
-        let input = Resp::deserialize(&buffer[..]);
-        let command = Command::from(input);
-        let result = store.lock().unwrap().exec(command);
-
-        conn.write_all(&result)?;
+    loop {
+        let bytes_read = conn.read(&mut buffer)?;
+        if bytes_read == 0 {
+            return Ok(());
+        }
+        let inputs = Resp::deserialize(&buffer[..bytes_read]);
+        let mut response = vec![];
+        for input in inputs {
+            let command = Command::from(input);
+            let mut result = store.lock().unwrap().exec(command);
+            response.append(&mut result);
+        }
+        conn.write_all(&response)?;
         buffer = vec![0; 1024];
     }
-    Ok(())
 }
 
 pub fn run(port: u16, num_workers: usize) -> Result<(), Box<dyn Error>> {

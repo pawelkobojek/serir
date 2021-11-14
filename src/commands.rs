@@ -5,6 +5,7 @@ pub enum Command {
     Get(Vec<u8>),
     Set((Vec<u8>, Vec<u8>)),
     Command,
+    Config(String),
 }
 
 impl From<Resp> for Command {
@@ -26,12 +27,28 @@ fn parse_redis_command(elements: Vec<Resp>) -> Command {
         "get" => parse_get(&elements[1..]),
         "set" => parse_set(&elements[1..]),
         "command" => parse_command(&elements[1..]),
+        "config" => parse_config(&elements[1..]),
         _ => panic!("Unknown command: {}", command),
     }
 }
 
 fn parse_command(_arguments: &[Resp]) -> Command {
     Command::Command
+}
+
+fn parse_config(arguments: &[Resp]) -> Command {
+    // if arguments.len() != 2 {
+    //     panic!(
+    //         "CONFIG command requires two arguments, {} were given",
+    //         arguments.len()
+    //     );
+    // }
+    let val = match &arguments[1] {
+        Resp::BulkString(Some(val)) => val,
+        _ => panic!("omg"),
+    };
+
+    Command::Config(String::from_utf8_lossy(val).to_string())
 }
 
 fn parse_set(arguments: &[Resp]) -> Command {

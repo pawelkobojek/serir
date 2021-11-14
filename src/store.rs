@@ -20,6 +20,9 @@ impl KeyValueStore {
             Command::Get(key) => self.get(&key),
             Command::Set((key, value)) => self.set(&key, value),
             Command::Command => Resp::BulkString(None).serialize(),
+            Command::Config(value) if value == *"save" => b"*2\r\n$4\r\nsave\r\n$23\r\n3600 1 300 100 60 10000\r\n".to_vec(),
+            Command::Config(value) if value == *"appendonly" => b"*2\r\n$10\r\nappendonly\r\n$2\r\nno\r\n".to_vec(),
+            Command::Config(_) => Resp::Error(b"Supporting only \"appendonly\" and \"save\"".to_vec()).serialize(),
         }
     }
 
