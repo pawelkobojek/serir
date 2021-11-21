@@ -1,58 +1,31 @@
 pub mod commands;
 pub mod resp;
+pub mod server;
 pub mod store;
 
-use std::io::prelude::*;
+use std::error::Error;
+
 use std::sync::{Arc, Mutex};
-use std::{
-    error::Error,
-    net::{TcpListener, TcpStream},
-};
 
-use commands::Command;
+use tokio::net::TcpListener;
+
+use server::Server;
 use store::KeyValueStore;
+use tokio::select;
+use tokio::sync::oneshot::Receiver;
 
-use rayon::ThreadPoolBuilder;
-
-use crate::resp::Resp;
-
-fn handle_client(
-    store: Arc<Mutex<KeyValueStore>>,
-    mut conn: TcpStream,
-) -> Result<(), Box<dyn Error>> {
-    let mut buffer = vec![0; 1024];
-    loop {
-        let bytes_read = conn.read(&mut buffer)?;
-        if bytes_read == 0 {
-            return Ok(());
-        }
-        let inputs = Resp::deserialize(&buffer[..bytes_read]);
-        let mut response = vec![];
-        for input in inputs {
-            let command = Command::from(input);
-            let mut result = store.lock().unwrap().exec(command);
-            response.append(&mut result);
-        }
-        conn.write_all(&response)?;
-        buffer = vec![0; 1024];
-    }
-}
-
-pub fn run(port: u16, num_workers: usize) -> Result<(), Box<dyn Error>> {
-    let pool = ThreadPoolBuilder::new().num_threads(num_workers).build()?;
+pub async fn run(port: u16, running: Receiver<bool>) -> Result<(), Box<dyn Error>> {
     let store = Arc::new(Mutex::new(KeyValueStore::new()));
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", port))?;
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
+    let server = Server::new(store, listener);
 
-    for conn in listener.incoming() {
-        let conn = conn?;
-        let store = store.clone();
-        pool.spawn(move || match handle_client(store, conn) {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Error reading from stream: {}", e);
-            }
-        });
+    select! {
+        _ = server.run() => {
+
+        },
+        _ = running => {
+
+        }
     }
-
     Ok(())
 }

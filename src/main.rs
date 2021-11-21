@@ -1,5 +1,6 @@
 use serir::run;
 use std::error::Error;
+use tokio::sync::oneshot;
 
 use structopt::StructOpt;
 
@@ -9,13 +10,16 @@ struct Opt {
     /// Port to listen on.
     #[structopt(short, long, default_value = "6379")]
     port: u16,
-
-    /// Number of workers in a threadpool
-    #[structopt(short, long, default_value = "4")]
-    num_workers: usize,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let opt = Opt::from_args();
-    run(opt.port, opt.num_workers)
+    let (tx, rx) = oneshot::channel();
+    let mut tx = Some(tx);
+    ctrlc::set_handler(move || {
+        tx.take().unwrap().send(true).unwrap();
+    })
+    .expect("Error setting ctrl-c handler");
+    run(opt.port, rx).await
 }
