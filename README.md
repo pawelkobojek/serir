@@ -8,4 +8,5 @@ No packages are distributed at this moment, therefore you must clone this reposi
 1. `cargo build --release`.
 2. `target/release/serir [--port <port_number> --num-workers <num_workers>] `. Default port is 6379.
 3. Connect with `redis-cli` and try running `GET`s and `SET`s.
+4. Alternatively, run `redis-benchmark -t get,set`.
 
