@@ -1,20 +1,20 @@
 pub mod commands;
+pub mod error;
 pub mod resp;
 pub mod server;
 pub mod store;
 
-use std::error::Error;
-
+use std::future::Future;
 use std::sync::{Arc, Mutex};
 
+use error::SerirError;
 use tokio::net::TcpListener;
 
 use server::Server;
 use store::KeyValueStore;
 use tokio::select;
-use tokio::sync::oneshot::Receiver;
 
-pub async fn run(port: u16, running: Receiver<bool>) -> Result<(), Box<dyn Error>> {
+pub async fn run(port: u16, sigint: impl Future) -> Result<(), SerirError> {
     let store = Arc::new(Mutex::new(KeyValueStore::new()));
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
     let server = Server::new(store, listener);
@@ -23,7 +23,7 @@ pub async fn run(port: u16, running: Receiver<bool>) -> Result<(), Box<dyn Error
         _ = server.run() => {
 
         },
-        _ = running => {
+        _ = sigint => {
 
         }
     }

@@ -1,6 +1,5 @@
-use serir::run;
-use std::error::Error;
-use tokio::sync::oneshot;
+use serir::{error::SerirError, run};
+use tokio::signal;
 
 use structopt::StructOpt;
 
@@ -13,13 +12,7 @@ struct Opt {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), SerirError> {
     let opt = Opt::from_args();
-    let (tx, rx) = oneshot::channel();
-    let mut tx = Some(tx);
-    ctrlc::set_handler(move || {
-        tx.take().unwrap().send(true).unwrap();
-    })
-    .expect("Error setting ctrl-c handler");
-    run(opt.port, rx).await
+    run(opt.port, signal::ctrl_c()).await
 }

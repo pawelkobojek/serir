@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::commands::Command;
+use crate::error::SerirResult;
 use crate::resp::Resp;
 
 #[derive(Debug)]
@@ -15,13 +16,14 @@ impl KeyValueStore {
         }
     }
 
-    pub fn exec(&mut self, command: Command) -> Vec<u8> {
+    pub fn exec(&mut self, command: Command) -> SerirResult<Vec<u8>> {
         match command {
             Command::Get(key) => self.get(&key),
             Command::Set((key, value)) => self.set(&key, value),
+            // hardcoded only to be able to run redis-benchmark
             Command::Command => Resp::BulkString(None).serialize(),
-            Command::Config(value) if value == *"save" => b"*2\r\n$4\r\nsave\r\n$23\r\n3600 1 300 100 60 10000\r\n".to_vec(),
-            Command::Config(value) if value == *"appendonly" => b"*2\r\n$10\r\nappendonly\r\n$2\r\nno\r\n".to_vec(),
+            Command::Config(value) if value == *"save" => Ok(b"*2\r\n$4\r\nsave\r\n$23\r\n3600 1 300 100 60 10000\r\n".to_vec()),
+            Command::Config(value) if value == *"appendonly" => Ok(b"*2\r\n$10\r\nappendonly\r\n$2\r\nno\r\n".to_vec()),
             Command::Config(_) => Resp::Error(b"Supporting only \"appendonly\" and \"save\"".to_vec()).serialize(),
         }
     }
@@ -34,7 +36,7 @@ impl KeyValueStore {
         self.store.get(&key.to_owned())
     }
 
-    fn get(&self, key: &[u8]) -> Vec<u8> {
+    fn get(&self, key: &[u8]) -> SerirResult<Vec<u8>> {
         let value = match self.store_get(key) {
             Some(val) => Resp::BulkString(Some(val.clone())),
             None => Resp::BulkString(None),
@@ -43,7 +45,7 @@ impl KeyValueStore {
         value.serialize()
     }
 
-    fn set(&mut self, key: &[u8], value: Vec<u8>) -> Vec<u8> {
+    fn set(&mut self, key: &[u8], value: Vec<u8>) -> SerirResult<Vec<u8>> {
         self.store_set(key, value);
 
         Resp::SimpleString(b"OK".to_vec()).serialize()

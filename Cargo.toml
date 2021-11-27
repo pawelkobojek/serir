@@ -8,8 +8,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ctrlc = "3.2.1"
 rand = "0.8.4"
 rayon = "1.5.1"
 structopt = "0.3.25"
-tokio = { version = "1.13.0", features = ["rt-multi-thread", "io-util", "net", "macros", "sync"]}
+tokio = { version = "1.13.0", features = ["rt-multi-thread", "io-util", "net", "macros", "signal"]}

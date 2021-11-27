@@ -11,7 +11,7 @@ pub enum Command {
 impl From<Resp> for Command {
     fn from(object: Resp) -> Self {
         match object {
-            Resp::Array(elements) => parse_redis_command(elements),
+            Resp::Array(Some(elements)) => parse_redis_command(elements),
             _ => panic!("Command can only be created from Array"),
         }
     }
@@ -89,10 +89,10 @@ mod tests {
 
     #[test]
     fn parses_get_command() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"GET".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
-        ]);
+        ]));
         let command = Command::from(resp);
 
         if let Command::Get(key) = command {
@@ -104,10 +104,10 @@ mod tests {
 
     #[test]
     fn parses_lowercase_get_command() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"get".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
-        ]);
+        ]));
         let command = Command::from(resp);
 
         if let Command::Get(key) = command {
@@ -120,21 +120,21 @@ mod tests {
     #[test]
     #[should_panic]
     fn panics_get_parsing_with_wrong_num_args() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"get".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
             Resp::BulkString(Some(b"value".to_vec())),
-        ]);
+        ]));
         Command::from(resp);
     }
 
     #[test]
     fn parses_set_command() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"SET".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
             Resp::BulkString(Some(b"value".to_vec())),
-        ]);
+        ]));
         let command = Command::from(resp);
 
         if let Command::Set((key, value)) = command {
@@ -147,11 +147,11 @@ mod tests {
 
     #[test]
     fn parses_lowercase_set_command() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"set".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
             Resp::BulkString(Some(b"value".to_vec())),
-        ]);
+        ]));
         let command = Command::from(resp);
 
         if let Command::Set((key, value)) = command {
@@ -165,10 +165,10 @@ mod tests {
     #[test]
     #[should_panic]
     fn panics_set_parsing_with_wrong_num_args() {
-        let resp = Resp::Array(vec![
+        let resp = Resp::Array(Some(vec![
             Resp::BulkString(Some(b"set".to_vec())),
             Resp::BulkString(Some(b"key".to_vec())),
-        ]);
+        ]));
         Command::from(resp);
     }
 }
