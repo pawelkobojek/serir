@@ -131,6 +131,7 @@ impl<'a> Parser<'a> {
         let mut buf = vec![0u8; (len + 2) as usize];
         self.reader.read_exact(&mut buf)?;
         if buf.split_off(len) != b"\r\n" {
+            // TODO: should all be changed to byte-by-byte parsing anyway
             todo!();
         }
         Ok(Resp::BulkString(Some(buf)))
