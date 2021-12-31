@@ -9,8 +9,9 @@ use tokio::sync::{
 
 use crate::commands::Command;
 use crate::error::SerirResult;
-use crate::resp::Resp;
 use crate::store::KeyValueStore;
+
+use respirator::resp;
 
 pub struct Server {
     store: Arc<Mutex<KeyValueStore>>,
@@ -30,9 +31,10 @@ async fn handle_client(commands_tx: Sender<Request>, mut socket: TcpStream) -> S
         if bytes_read == 0 {
             return Ok(());
         }
-        let inputs = Resp::deserialize(&buffer[..bytes_read])?;
         let mut response = vec![];
-        for input in inputs {
+
+        while let Ok((_, input)) = resp(&buffer[..bytes_read]) {
+            // for input in inputs {
             let command = Command::from(input);
             let (response_tx, response_rx) = oneshot::channel();
             let request = Request {

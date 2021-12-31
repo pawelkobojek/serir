@@ -1,4 +1,4 @@
-use crate::resp::Resp;
+use respirator::Resp;
 
 #[derive(Debug)]
 pub enum Command {
